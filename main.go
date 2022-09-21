@@ -4,7 +4,9 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
+	"io/ioutil"
 )
 
 type config struct {
@@ -25,6 +27,7 @@ func main() {
 
 	// 获取用户接口
 	edit, preview := cfg.makeUI()
+	cfg.createMenuItems(w)
 
 	// 设置窗口的内容
 	w.SetContent(container.NewHSplit(edit, preview))
@@ -45,4 +48,79 @@ func (app *config) makeUI() (*widget.Entry, *widget.RichText) {
 	edit.OnChanged = preview.ParseMarkdown
 
 	return edit, preview
+}
+
+func (app *config) createMenuItems(win fyne.Window) {
+	openMenuItem := fyne.NewMenuItem("Open...", app.openFunc(win))
+
+	saveMenuItem := fyne.NewMenuItem("Save", func() {
+
+	})
+	app.SaveMenuItem = saveMenuItem
+	app.SaveMenuItem.Disabled = true
+
+	saveAsMenuItem := fyne.NewMenuItem("Save as...", app.saveAsFunc(win))
+
+	fileMenu := fyne.NewMenu("File", openMenuItem, saveMenuItem, saveAsMenuItem)
+
+	menu := fyne.NewMainMenu(fileMenu)
+
+	win.SetMainMenu(menu)
+}
+
+func (app *config) openFunc(win fyne.Window) func() {
+	return func() {
+		openDialog := dialog.NewFileOpen(func(read fyne.URIReadCloser, err error) {
+			if err != nil {
+				dialog.ShowError(err, win)
+				return
+			}
+
+			if read == nil {
+				return
+			}
+
+			defer read.Close()
+
+			data, err := ioutil.ReadAll(read)
+			if err != nil {
+				dialog.ShowError(err, win)
+				return
+			}
+
+			app.EditWidget.SetText(string(data))
+			app.CurrentFile = read.URI()
+			win.SetTitle(win.Title() + " - " + read.URI().Name())
+			app.SaveMenuItem.Disabled = false
+		}, win)
+
+		openDialog.Show()
+	}
+}
+
+func (app *config) saveAsFunc(win fyne.Window) func() {
+	return func() {
+		savaDialog := dialog.NewFileSave(func(write fyne.URIWriteCloser, err error) {
+			if err != nil {
+				dialog.ShowError(err, win)
+				return
+			}
+
+			if write == nil {
+				// user cancelled
+				return
+			}
+
+			// save file
+			write.Write([]byte(app.EditWidget.Text))
+			app.CurrentFile = write.URI()
+
+			defer write.Close()
+
+			win.SetTitle(win.Title() + " - " + write.URI().Name())
+			app.SaveMenuItem.Disabled = false
+
+		}, win)
+		savaDialog.Show()
+	}
 }
