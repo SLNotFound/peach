@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/widget"
 	"io/ioutil"
+	"os"
 )
 
 type config struct {
@@ -19,6 +20,7 @@ type config struct {
 var cfg config
 
 func main() {
+	os.Setenv("FYNE_FONT", "msyhl.ttc")
 	// 创建一个应用
 	a := app.New()
 
@@ -51,17 +53,17 @@ func (app *config) makeUI() (*widget.Entry, *widget.RichText) {
 }
 
 func (app *config) createMenuItems(win fyne.Window) {
-	openMenuItem := fyne.NewMenuItem("Open...", app.openFunc(win))
+	openMenuItem := fyne.NewMenuItem("打开", app.openFunc(win))
 
-	saveMenuItem := fyne.NewMenuItem("Save", func() {
+	saveMenuItem := fyne.NewMenuItem("保存", func() {
 
 	})
 	app.SaveMenuItem = saveMenuItem
 	app.SaveMenuItem.Disabled = true
 
-	saveAsMenuItem := fyne.NewMenuItem("Save as...", app.saveAsFunc(win))
+	saveAsMenuItem := fyne.NewMenuItem("另存为", app.saveAsFunc(win))
 
-	fileMenu := fyne.NewMenu("File", openMenuItem, saveMenuItem, saveAsMenuItem)
+	fileMenu := fyne.NewMenu("文件", openMenuItem, saveMenuItem, saveAsMenuItem)
 
 	menu := fyne.NewMainMenu(fileMenu)
 
